@@ -1,0 +1,13 @@
+language_pair,status,overall_activation_rate_percent,active_layers_count,total_layers_processed
+en_ar,success,19.91,36.0,36.0
+en_de,success,20.92,36.0,36.0
+en_es,success,21.25,36.0,36.0
+en_fr,success,21.64,36.0,36.0
+en_ru,success,21.65,36.0,36.0
+en_zh,success,18.13,36.0,36.0
+zh_ar,file_not_found,,,
+zh_de,success,19.91,36.0,36.0
+zh_en,success,18.03,36.0,36.0
+zh_es,success,20.74,36.0,36.0
+zh_fr,success,20.77,36.0,36.0
+zh_ru,success,20.66,36.0,36.0
