@@ -22,10 +22,10 @@ except ImportError as e:
 from transformers import AutoTokenizer
 
 # --- 配置 ---
-MASK_BASE_PATH = "./output/qwen2-3b/xnli_local_wo/"
+MASK_BASE_PATH = "./output/qwen2-3b/xnli_local/"
 MASK_CHECKPOINT_SUBDIR = "checkpoint-12380/model.safetensors"
 MODEL_PATH = "/public/share/model/Qwen2.5-3B-Instruct"
-OUTPUT_CSV_DIR = "./translation_results"
+OUTPUT_CSV_DIR = "./translation_results_with"
 
 LANGUAGE_PAIRS = [
     "en_ar", "en_de", "en_es", "en_fr", "en_ru", "en_zh",
