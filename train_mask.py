@@ -11,6 +11,7 @@ import itertools
 import wandb
 import datasets
 from datasets import Dataset, concatenate_datasets
+import matplotlib.pyplot as plt
 from models.modeling_llama import LlamaForCausalLM
 from models.modeling_phi3 import Phi3ForCausalLM
 from models.modeling_mistral import MistralForCausalLM
@@ -153,6 +154,47 @@ class FreezePartGradientsCallback(TrainerCallback):
         # self.model.tensor.grad[self.freeze_mask == 1] = 0
         pass
 
+class MemoryUsageCallback(TrainerCallback):
+    def __init__(self):
+        super().__init__()
+        self.memory_stats = []
+
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        if logs and "mem_alloc_gb" in logs:
+            self.memory_stats.append({
+                "step": state.global_step,
+                "allocated": logs["mem_alloc_gb"],
+                "reserved": logs["mem_reserved_gb"],
+                "max_allocated": logs["max_mem_alloc_gb"],
+            })
+
+    def on_train_end(self, args, state, control, **kwargs):
+        if not self.memory_stats:
+            print("未收集到显存数据，跳过绘图。")
+            return
+
+        steps = [s["step"] for s in self.memory_stats]
+        allocated = [s["allocated"] for s in self.memory_stats]
+        reserved = [s["reserved"] for s in self.memory_stats]
+        max_allocated = [s["max_allocated"] for s in self.memory_stats]
+
+        plt.figure(figsize=(15, 7))
+        plt.plot(steps, allocated, label="已分配显存 (GB)", marker='o', linestyle='-')
+        plt.plot(steps, reserved, label="预留显存 (GB)", marker='x', linestyle='--')
+        plt.plot(steps, max_allocated, label="峰值已分配显存 (GB)", linestyle=':')
+
+        plt.xlabel("训练步数")
+        plt.ylabel("显存 (GB)")
+        plt.title("训练过程中的 GPU 显存使用情况")
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        
+        output_path = os.path.join(args.output_dir, "memory_usage.png")
+        plt.savefig(output_path)
+        print(f"显存使用情况图已保存至: {output_path}")
+        plt.close()
+
 # Custom loss function by overriding Trainer's compute_loss
 class CustomTrainer(Trainer):
     def __init__(self, *args, lm_model, lm_tokenizer, **kwargs):
@@ -199,7 +241,10 @@ class CustomTrainer(Trainer):
             "pred_output_loss": pred_output_loss.item(),
             "normalizer": normalizer.item(),
             "tau_temp": tau_temp,
-            "total_loss": loss.item()
+            "total_loss": loss.item(),
+            "mem_alloc_gb": round(torch.cuda.memory_allocated() / 1024**3, 2),
+            "mem_reserved_gb": round(torch.cuda.memory_reserved() / 1024**3, 2),
+            "max_mem_alloc_gb": round(torch.cuda.max_memory_allocated() / 1024**3, 2)
         })
 
         return (loss, pred_outputs) if return_outputs else loss
@@ -269,6 +314,7 @@ def search_weight_embed(lm_model, task: str, args, training_args):
     n_layers = lm_model.config.num_hidden_layers
     n_heads = lm_model.config.num_attention_heads
     intermediate_size = lm_model.config.intermediate_size
+    print(f"每个FFN层的神经元数量 (intermediate_size): {intermediate_size}")
     tensor_length = n_layers * intermediate_size
     embed_model = SimpleTensorModel(tensor_length=tensor_length).to(torch.device("cuda"))
 
@@ -349,7 +395,7 @@ def search_weight_embed(lm_model, task: str, args, training_args):
         eval_dataset=dev_dataset,
         data_collator=data_collator,
         compute_metrics=None,
-        # callbacks=[FreezePartGradientsCallback(embed_model, lang_weight_dict[task])],
+        callbacks=[MemoryUsageCallback()],
         lm_model=lm_model,
         lm_tokenizer=lm_tokenizer,
     )
@@ -384,7 +430,7 @@ if __name__ == "__main__":
         local_files_only=True, 
         device_map=torch.device(f"cuda:{int(os.environ['LOCAL_RANK'])}") if args.distributed_state.use_distributed else "auto", 
         torch_dtype=torch.float16,
-        attn_implementation="eager",
+        attn_implementation="flash_attention_2",
         max_position_embeddings=2048
     )
 

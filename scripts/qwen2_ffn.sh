@@ -6,8 +6,8 @@ export TRANSFORMERS_NO_ADVISORY_WARNINGS=1
 
 # --- 参数设置 (基于 qwen2_xnli.sh，为本地测试调整) ---
 LM_MODEL_PATH="/public/share/model/Qwen2.5-3B-Instruct" 
-TRAIN_DATA_PATH="/public/home/sjtu_intern/users/yilu.cao/dataset/XNLI-15way/xnli.15way.orig.tsv" # 修改为绝对路径
-DEV_DATA_PATH="/public/home/sjtu_intern/users/yilu.cao/dataset/XNLI-15way/xnli.15way.orig.tsv" 
+TRAIN_DATA_PATH="/public/home/sjtu_intern/users/yilu.cao/FFN_mask/dataset/XNLI-15way/xnli.15way.orig.tsv" # 修改为绝对路径
+DEV_DATA_PATH="/public/home/sjtu_intern/users/yilu.cao/FFN_mask/dataset/XNLI-15way/xnli.15way.orig.tsv" 
 OUTPUT_DIR="./output/qwen2-3b/xnli_local_wo"         
 NUM_GPUS=1
 
@@ -15,7 +15,7 @@ cd ../
 # --- 环境设置结束 ---
 
 # --- 训练命令 ---
-WANDB_MODE=offline python train_mask.py \
+WANDB_MODE=offline python ./FFN_mask/train_mask.py \
     --lm_model_path $LM_MODEL_PATH \
     --train_data_path $TRAIN_DATA_PATH \
     --dev_data_path $DEV_DATA_PATH \
