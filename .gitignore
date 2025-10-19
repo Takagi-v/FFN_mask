@@ -8,7 +8,10 @@ qwen2-3b/
 
 # 数据集
 dataset/
-
+/figure
+figure_stats/
+translation_results_with/
+translation_results/
 # Jupyter Notebook
 .ipynb_checkpoints
 
@@ -26,3 +29,4 @@ Thumbs.db
 
 # 日志文件
 *.log
+
